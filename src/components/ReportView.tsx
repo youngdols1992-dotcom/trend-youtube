@@ -1,4 +1,5 @@
 import type { DailyReport } from "@/lib/types";
+import KeywordExplorer from "@/components/KeywordExplorer";
 
 function formatViewCount(v: string): string {
   const n = Number(v);
@@ -79,16 +80,7 @@ export default function ReportView({ report }: { report: DailyReport }) {
       {/* 뉴스 키워드 */}
       <section>
         <h2 className="mb-3 text-lg font-semibold">📰 오늘의 뉴스 키워드</h2>
-        <div className="flex flex-wrap gap-2">
-          {report.newsKeywords.map((k) => (
-            <span
-              key={k.keyword}
-              className="rounded-full bg-zinc-100 px-3 py-1 text-sm dark:bg-zinc-800"
-            >
-              {k.keyword} <span className="text-zinc-400">{k.count}</span>
-            </span>
-          ))}
-        </div>
+        <KeywordExplorer keywords={report.newsKeywords} ebsSuggestions={report.ebsSuggestions} />
       </section>
 
       {/* 뉴스 헤드라인 */}
@@ -104,6 +96,44 @@ export default function ReportView({ report }: { report: DailyReport }) {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* 40~60대 타겟 인기 콘텐츠 */}
+      <section>
+        <h2 className="mb-1 text-lg font-semibold">👨‍👩‍👧‍👦 40~60대 타겟 인기 콘텐츠</h2>
+        <p className="mb-3 text-xs text-zinc-400">
+          뉴스/시사, 교육/교양, 여행/다큐 카테고리의 유튜브 인기 급상승 영상이에요.
+        </p>
+        {report.olderAudienceTrending.length === 0 ? (
+          <p className="text-sm text-zinc-500">데이터 없음</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {report.olderAudienceTrending.map((v) => (
+              <a
+                key={v.videoId}
+                href={v.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 hover:border-zinc-400 dark:border-zinc-800"
+              >
+                {v.thumbnail && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={v.thumbnail} alt={v.title} className="aspect-video w-full object-cover" />
+                )}
+                <div className="flex flex-1 flex-col gap-1 p-3">
+                  {v.categoryLabel && (
+                    <span className="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-300">
+                      {v.categoryLabel}
+                    </span>
+                  )}
+                  <span className="line-clamp-2 text-sm font-medium">{v.title}</span>
+                  <span className="text-xs text-zinc-500">{v.channel}</span>
+                  <span className="text-xs text-zinc-500">{formatViewCount(v.viewCount)}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

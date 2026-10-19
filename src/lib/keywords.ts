@@ -26,28 +26,67 @@ function stripParticle(token: string): string {
   return token;
 }
 
+function tokenizeTitle(title: string): string[] {
+  const rawTokens = title
+    .replace(/[\[\]()<>'"“”‘’…,.?!·|]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const tokens: string[] = [];
+  for (const raw of rawTokens) {
+    const stripped = stripParticle(raw);
+    if (stripped.length < 2) continue;
+    if (STOPWORDS.has(stripped)) continue;
+    if (/^[0-9]+$/.test(stripped)) continue;
+    tokens.push(stripped);
+  }
+  return tokens;
+}
+
 export function extractKeywords(news: NewsItem[], topN = 20): KeywordCount[] {
-  const counts = new Map<string, number>();
+  const headlineTokens = news.map((item) => tokenizeTitle(item.title));
 
-  for (const item of news) {
-    const rawTokens = item.title
-      .replace(/[\[\]()<>'"“”‘’…,.?!·|]/g, " ")
-      .split(/\s+/)
-      .filter(Boolean);
-
-    for (const raw of rawTokens) {
-      const stripped = stripParticle(raw);
-      if (stripped.length < 2) continue;
-      if (STOPWORDS.has(stripped)) continue;
-      if (/^[0-9]+$/.test(stripped)) continue;
-
-      counts.set(stripped, (counts.get(stripped) ?? 0) + 1);
+  const globalCounts = new Map<string, number>();
+  for (const tokens of headlineTokens) {
+    for (const token of new Set(tokens)) {
+      globalCounts.set(token, (globalCounts.get(token) ?? 0) + 1);
     }
   }
 
-  return Array.from(counts.entries())
+  // Pool of all meaningful tokens (not just the top N) used for related-keyword lookup.
+  const pool = new Set(
+    Array.from(globalCounts.entries())
+      .filter(([, count]) => count >= 2)
+      .map(([token]) => token)
+  );
+
+  const topKeywords = Array.from(globalCounts.entries())
     .filter(([, count]) => count >= 2)
     .sort((a, b) => b[1] - a[1])
     .slice(0, topN)
-    .map(([keyword, count]) => ({ keyword, count }));
+    .map(([keyword]) => keyword);
+
+  return topKeywords.map((keyword): KeywordCount => {
+    const relatedCounts = new Map<string, number>();
+
+    for (const tokens of headlineTokens) {
+      if (!tokens.includes(keyword)) continue;
+      for (const token of new Set(tokens)) {
+        if (token === keyword) continue;
+        if (!pool.has(token)) continue;
+        relatedCounts.set(token, (relatedCounts.get(token) ?? 0) + 1);
+      }
+    }
+
+    const related = Array.from(relatedCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([token]) => token);
+
+    return {
+      keyword,
+      count: globalCounts.get(keyword) ?? 0,
+      related,
+    };
+  });
 }

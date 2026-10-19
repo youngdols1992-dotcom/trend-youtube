@@ -27,7 +27,9 @@ interface YoutubeApiResponse {
 
 export async function fetchYoutubeTrending(
   regionCode = "KR",
-  maxResults = 25
+  maxResults = 25,
+  videoCategoryId?: string,
+  categoryLabel?: string
 ): Promise<YoutubeTrendingItem[]> {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
@@ -40,6 +42,9 @@ export async function fetchYoutubeTrending(
   url.searchParams.set("regionCode", regionCode);
   url.searchParams.set("maxResults", String(maxResults));
   url.searchParams.set("key", apiKey);
+  if (videoCategoryId) {
+    url.searchParams.set("videoCategoryId", videoCategoryId);
+  }
 
   const res = await fetch(url.toString(), { cache: "no-store" });
   const data: YoutubeApiResponse = await res.json();
@@ -67,6 +72,7 @@ export async function fetchYoutubeTrending(
       thumbnail: thumb,
       url: `https://www.youtube.com/watch?v=${item.id}`,
       categoryId: item.snippet?.categoryId ?? "",
+      categoryLabel,
     };
   });
 }

@@ -25,11 +25,21 @@ export interface YoutubeTrendingItem {
   thumbnail: string;
   url: string;
   categoryId: string;
+  categoryLabel?: string;
 }
 
 export interface KeywordCount {
   keyword: string;
   count: number;
+  related: string[];
+}
+
+export interface EbsSuggestion {
+  videoId: string;
+  title: string;
+  channel: string;
+  thumbnail: string;
+  url: string;
 }
 
 export interface DailyReport {
@@ -40,4 +50,6 @@ export interface DailyReport {
   newsKeywords: KeywordCount[];
   youtubeTrending: YoutubeTrendingItem[];
   youtubeMissingReason?: string;
+  olderAudienceTrending: YoutubeTrendingItem[];
+  ebsSuggestions: Record<string, EbsSuggestion[]>;
 }
